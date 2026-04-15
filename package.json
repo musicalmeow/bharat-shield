@@ -1,0 +1,15 @@
+{
+  "name": "kmune",
+  "private": true,
+  "description": "Monorepo root — backend lives in ./backend",
+  "scripts": {
+    "start": "npm --prefix backend run start",
+    "dev": "npm --prefix backend run dev",
+    "frontend:start": "npm --prefix frontend start",
+    "frontend:install": "npm install --prefix frontend",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api",
+    "install:backend": "npm install --prefix backend"
+  }
+}

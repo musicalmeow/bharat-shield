@@ -1,0 +1,30 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    # Database files live on your machine here (not in a hidden Docker volume):
+    #   KMune/data/mongo/
+    volumes:
+      - ./data/mongo:/data/db
+    ports:
+      # Use MongoDB Compass (or mongosh) on your PC: mongodb://localhost:27017/kmune
+      - "127.0.0.1:27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      MONGO_URI: mongodb://mongo:27017/kmune
+      NODE_ENV: production
+    depends_on:
+      mongo:
+        condition: service_healthy
