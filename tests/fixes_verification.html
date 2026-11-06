@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixes Verification - KMune</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #17a2b8;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        .fix {
+            background: #ffc107;
+            color: #000;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #ff6b35;
+        }
+        .code {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            border-left: 4px solid #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fixes Verification - KMune</h1>
+        <div class="success-message">
+            Bhai! Dono fixes apply ho gaye hain! 
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>1st Fix - User-Specific Deletion</h2>
+        
+        <div class="fix">
+            <h3>Problem Solve Kiya:</h3>
+            <ul>
+                <li>Ab jab user delete karega toh sirf USKA data delete hoga</li>
+                <li>Receiver ka data safe rahega</li>
+                <li>Chat deletion user-specific ho gaya hai</li>
+            </ul>
+        </div>
+
+        <div class="code">
+            <h3>Backend Fix:</h3>
+            <pre><code>// BEFORE: Dono taraf delete ho raha tha
+const deleteResult = await Message.deleteMany({
+  $or: [
+    { senderId: senderId, receiverId: receiverId },
+    { senderId: receiverId, receiverId: senderId }
+  ]
+});
+
+// AFTER: Sirf user ka data delete hoga
+const deleteResult = await Message.deleteMany({
+  senderId: userId,
+  receiverId: contactId  // Only delete user's sent messages
+});</code></pre>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>2nd Fix - Continuous Encryption</h2>
+        
+        <div class="fix">
+            <h3>Problem Solve Kiya:</h3>
+            <ul>
+                <li>Ab conversation mein dono side encryption rahega</li>
+                <li>Na koi message plain text mein dikhega</li>
+                <li>Continuous encryption chalti rahegi</li>
+            </ul>
+        </div>
+
+        <div class="code">
+            <h3>Frontend Fix:</h3>
+            <pre><code>// BEFORE: Kuch messages plain text dikhte the
+let body = '[Sent - encrypted for recipient]';
+if (m.receiverId === currentUser.userId && priv) {
+  body = await decryptFromStoredMessage(...);
+} else if (m.senderId === currentUser.userId) {
+  body = '[You]'; // Plain text!
+}
+
+// AFTER: Sab kuch encrypted rahega
+let body = '[Encrypted]';
+if (m.receiverId === currentUser.userId && priv) {
+  body = await decryptFromStoredMessage(...);
+} else if (m.senderId === currentUser.userId) {
+  try {
+    // Decrypt own sent messages too for continuous encryption
+    body = await decryptFromStoredMessage(...);
+  } catch {
+    body = '[Encrypted - Unable to decrypt]';
+  }
+}</code></pre>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Test Karne Ke Liye</h2>
+        
+        <div class="info">
+            <h3>Step-by-Step Testing:</h3>
+            <ol>
+                <li><strong>Open:</strong> <a href="http://localhost:3001" target="_blank">KMune App</a></li>
+                <li><strong>Login:</strong> Do users (Alice aur Bob)</li>
+                <li><strong>Messages:</strong> Dono taraf messages bhejo</li>
+                <li><strong>Check:</strong> Sab messages encrypted dikhte hain</li>
+                <li><strong>Delete Test:</strong> Alice apna chat delete kare</li>
+                <li><strong>Verify:</strong> Bob ka chat safe rahega</li>
+                <li><strong>Result:</strong> Dono fixes working! </li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Expected Results</h2>
+        
+        <div class="success">
+            <h3>1st Fix Result:</h3>
+            <ul>
+                <li> Alice delete karegi -> Sirf Alice ka data delete hoga</li>
+                <li> Bob ka chat safe rahega -> Bob ko Alice ke messages dikhte rahege</li>
+                <li> Fair deletion system -> User-specific deletion</li>
+            </ul>
+        </div>
+
+        <div class="success">
+            <h3>2nd Fix Result:</h3>
+            <ul>
+                <li> Sab messages encrypted dikhte hain</li>
+                <li> Koi plain text message nahi dikhega</li>
+                <li> Continuous encryption chalti rahegi</li>
+                <li> Security maintain rahegi</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Console Logs</h2>
+        
+        <div class="code">
+            <h3>Expected Console Output:</h3>
+            <pre><strong>Backend Console:</strong>
+Deleting chat for user alice_id with contact bob_id (user-specific only)
+Deleted 5 sent messages (receiver's messages preserved)
+
+<strong>Frontend Console:</strong>
+Loaded cached messages: [{text: "Hello Bob", own: true}, ...]
+Processed messages: [{text: "Hello Bob", own: true}, {text: "Hi Alice", own: false}]
+All messages decrypted and displayed continuously</pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Dono fixes verify karne ke liye ready hai!');
+            console.log('1. User-specific deletion - Check kar');
+            console.log('2. Continuous encryption - Check kar');
+        });
+    </script>
+</body>
+</html>

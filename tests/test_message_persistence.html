@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMune Message Persistence Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .message-preview {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 KMune Message Persistence Test</h1>
+        <p>This test verifies that messages persist across page refreshes.</p>
+    </div>
+
+    <div class="container">
+        <h2>🔧 Test Controls</h2>
+        <button onclick="testLocalStorage()">Test LocalStorage</button>
+        <button onclick="simulateMessageSend()">Simulate Message Send</button>
+        <button onclick="simulatePageRefresh()">Simulate Page Refresh</button>
+        <button onclick="clearTestData()">Clear Test Data</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>📨 Current Messages in Storage</h2>
+        <div id="messagePreview"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Test Instructions</h2>
+        <ol>
+            <li><strong>Test LocalStorage:</strong> Check if localStorage is available</li>
+            <li><strong>Simulate Message Send:</strong> Add test messages to storage</li>
+            <li><strong>Simulate Page Refresh:</strong> Load messages from storage (simulates browser refresh)</li>
+            <li><strong>Open Real App:</strong> Go to <a href="http://localhost:3001" target="_blank">http://localhost:3001</a> and test with real users</li>
+        </ol>
+        
+        <div class="info">
+            <strong>Expected Behavior:</strong><br>
+            ✅ Messages should appear instantly when loading a chat<br>
+            ✅ Messages should persist after page refresh<br>
+            ✅ New messages should be saved automatically<br>
+            ✅ Chat history should load from server and update cache
+        </div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function updateMessagePreview() {
+            const previewDiv = document.getElementById('messagePreview');
+            previewDiv.innerHTML = '';
+            
+            // Get all chat storage keys
+            const chatKeys = Object.keys(localStorage).filter(key => key.startsWith('chat_'));
+            
+            if (chatKeys.length === 0) {
+                previewDiv.innerHTML = '<p>No chat messages found in localStorage.</p>';
+                return;
+            }
+            
+            chatKeys.forEach(key => {
+                try {
+                    const messages = JSON.parse(localStorage.getItem(key));
+                    const [senderId, receiverId] = key.replace('chat_', '').split('_');
+                    
+                    const div = document.createElement('div');
+                    div.className = 'message-preview';
+                    div.innerHTML = `
+                        <strong>Chat ${senderId} ↔ ${receiverId}</strong><br>
+                        Messages: ${messages.length}<br>
+                        Latest: ${messages.length > 0 ? messages[messages.length - 1].text : 'None'}<br>
+                        <small>Storage Key: ${key}</small>
+                    `;
+                    previewDiv.appendChild(div);
+                } catch (e) {
+                    showResult(`Error parsing ${key}: ${e.message}`, 'error');
+                }
+            });
+        }
+
+        function testLocalStorage() {
+            try {
+                localStorage.setItem('test', 'value');
+                const value = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                
+                if (value === 'value') {
+                    showResult('✅ LocalStorage is working correctly', 'success');
+                } else {
+                    showResult('❌ LocalStorage test failed', 'error');
+                }
+            } catch (e) {
+                showResult(`❌ LocalStorage error: ${e.message}`, 'error');
+            }
+            updateMessagePreview();
+        }
+
+        function simulateMessageSend() {
+            const testUsers = [
+                { senderId: 'user1', receiverId: 'user2' },
+                { senderId: 'user2', receiverId: 'user1' }
+            ];
+            
+            testUsers.forEach(({ senderId, receiverId }) => {
+                const storageKey = `chat_${senderId}_${receiverId}`;
+                const existingMessages = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                
+                const newMessage = {
+                    id: `test-${Date.now()}-${Math.random()}`,
+                    text: `Test message from ${senderId} to ${receiverId} at ${new Date().toLocaleTimeString()}`,
+                    own: true,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+                
+                existingMessages.push(newMessage);
+                localStorage.setItem(storageKey, JSON.stringify(existingMessages));
+                
+                showResult(`✅ Added test message for chat ${senderId} ↔ ${receiverId}`, 'success');
+            });
+            
+            updateMessagePreview();
+        }
+
+        function simulatePageRefresh() {
+            showResult('🔄 Simulating page refresh - loading messages from localStorage...', 'info');
+            
+            // Clear current messages (simulates page refresh)
+            const chatKeys = Object.keys(localStorage).filter(key => key.startsWith('chat_'));
+            let totalMessages = 0;
+            
+            chatKeys.forEach(key => {
+                try {
+                    const messages = JSON.parse(localStorage.getItem(key) || '[]');
+                    totalMessages += messages.length;
+                    showResult(`📨 Loaded ${messages.length} messages from ${key}`, 'success');
+                } catch (e) {
+                    showResult(`❌ Failed to load from ${key}: ${e.message}`, 'error');
+                }
+            });
+            
+            showResult(`✅ Page refresh simulation complete. Total messages loaded: ${totalMessages}`, 'success');
+            updateMessagePreview();
+        }
+
+        function clearTestData() {
+            const chatKeys = Object.keys(localStorage).filter(key => key.startsWith('chat_'));
+            let clearedCount = 0;
+            
+            chatKeys.forEach(key => {
+                localStorage.removeItem(key);
+                clearedCount++;
+            });
+            
+            showResult(`🗑️ Cleared ${clearedCount} chat storage entries`, 'info');
+            updateMessagePreview();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showResult('🧪 Message Persistence Test Suite loaded', 'info');
+            updateMessagePreview();
+        });
+    </script>
+</body>
+</html>

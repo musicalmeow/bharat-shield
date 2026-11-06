@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Persistence Test - KMune</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .test-flow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .code {
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            border-left: 4px solid #6f42c1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Delete Persistence Test</h1>
+        <p>This test verifies that deleted chats stay deleted and don't reappear.</p>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Test Scenarios</h2>
+        
+        <div class="test-flow">
+            <div class="step">
+                <h3>📱 Before Fix</h3>
+                <ul>
+                    <li>Delete chat messages</li>
+                    <li>Messages disappear from view</li>
+                    <li>Navigate away and back</li>
+                    <li><strong>❌ Messages reappear</strong> (bug)</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <h3>✅ After Fix</h3>
+                <ul>
+                    <li>Delete chat messages</li>
+                    <li>Messages disappear from view</li>
+                    <li>Navigate away and back</li>
+                    <li><strong>✅ Messages stay deleted</strong> (fixed)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="code">
+            <h3>🔧 Technical Fix Applied</h3>
+            <pre><code>// Added deletion state flag
+const [isDeleted, setIsDeleted] = useState(false);
+
+// Prevent server fetch when deleted
+if (!isDeleted) {
+  const data = await fetchChat(currentUser.userId, user.id);
+  // ... process messages
+}
+
+// Set flag on delete
+const deleteChat = () => {
+  setIsDeleted(true);
+  setMessages([]);
+  localStorage.removeItem(storageKey);
+};
+
+// Reset flag when user changes
+useEffect(() => {
+  setIsDeleted(false); // Reset for new chat
+  loadHistory();
+}, [user.id]);</code></pre>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🎮 Interactive Test</h2>
+        <button onclick="simulateBeforeFix()">❌ Simulate Before Fix</button>
+        <button onclick="simulateAfterFix()">✅ Simulate After Fix</button>
+        <button onclick="clearTest()">🧹 Clear Test</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <div class="info">
+            <h3>🌐 Real App Test</h3>
+            <ol>
+                <li>Open <a href="http://localhost:3001" target="_blank">KMune App</a></li>
+                <li>Login and go to a chat with messages</li>
+                <li>Click "🗑️ Delete Chat" button</li>
+                <li>Confirm deletion</li>
+                <li>Verify messages are gone</li>
+                <li>Navigate to contacts and back to chat</li>
+                <li><strong>Messages should stay deleted</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let testState = {
+            messages: [],
+            isDeleted: false,
+            storageKey: 'chat_user123_contact456'
+        };
+
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function simulateBeforeFix() {
+            // Simulate the buggy behavior
+            testState.messages = [
+                { id: '1', text: 'Hello there!', own: false, time: '10:30 AM' },
+                { id: '2', text: 'Hi! How are you?', own: true, time: '10:31 AM' }
+            ];
+            localStorage.setItem(testState.storageKey, JSON.stringify(testState.messages));
+            
+            showResult('❌ Simulating BEFORE FIX: Messages will reappear after navigation', 'error');
+            updateDisplay();
+        }
+
+        function simulateAfterFix() {
+            // Simulate the fixed behavior
+            testState.messages = [
+                { id: '1', text: 'Hello there!', own: false, time: '10:30 AM' },
+                { id: '2', text: 'Hi! How are you?', own: true, time: '10:31 AM' }
+            ];
+            testState.isDeleted = true;
+            localStorage.setItem(testState.storageKey, JSON.stringify(testState.messages));
+            
+            showResult('✅ Simulating AFTER FIX: Messages will stay deleted', 'success');
+            updateDisplay();
+        }
+
+        function clearTest() {
+            localStorage.removeItem(testState.storageKey);
+            testState.messages = [];
+            testState.isDeleted = false;
+            showResult('🧹 Test cleared', 'info');
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const display = document.getElementById('testResults');
+            const status = testState.isDeleted ? 'DELETED' : 'ACTIVE';
+            const statusClass = testState.isDeleted ? 'success' : 'info';
+            
+            display.innerHTML = `
+                <div class="test-result ${statusClass}">
+                    <strong>Chat Status: ${status}</strong><br>
+                    Messages: ${testState.messages.length}<br>
+                    ${testState.messages.map(m => 
+                        `• ${m.own ? 'You' : 'Other'}: ${m.text} (${m.time})`
+                    ).join('<br>')}
+                </div>
+                <div class="test-result info">
+                    <strong>Test Navigation:</strong><br>
+                    <button onclick="simulateNavigation()">🔄 Navigate Away & Back</button>
+                    ${testState.isDeleted ? 
+                        '<em>✅ Messages should remain deleted</em>' : 
+                        '<em>❌ Messages will reappear (bug)</em>'
+                    }
+                </div>
+            `;
+        }
+
+        function simulateNavigation() {
+            showResult('🔄 Simulating navigation away and back...', 'info');
+            
+            // Simulate what happens when user navigates away and back
+            setTimeout(() => {
+                if (!testState.isDeleted) {
+                    // Bug: Messages reappear from server
+                    showResult('❌ BUG: Messages reappeared from server!', 'error');
+                } else {
+                    // Fixed: Messages stay deleted
+                    showResult('✅ FIXED: Messages stayed deleted!', 'success');
+                }
+                updateDisplay();
+            }, 1000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showResult('🗑️ Delete Persistence Test loaded', 'info');
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>

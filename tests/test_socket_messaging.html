@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket Messaging Test - KMune</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        .error {
+            background: #dc3545;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #17a2b8;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .test-flow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .code {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            border-left: 4px solid #00ff00;
+        }
+        .log {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 Socket Messaging Test</h1>
+        <div class="success-message">
+            📡 Enhanced Socket Debugging Added
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔍 Issue Analysis</h2>
+        
+        <div class="test-flow">
+            <div class="step">
+                <h3>🚨 Problem Identified</h3>
+                <ul>
+                    <li>Sender sends message → Socket event works</li>
+                    <li>Receiver doesn't get message → No real-time update</li>
+                    <li>Receiver sends message → Suddenly gets all messages</li>
+                    <li>Root cause: Receiver not connected to socket</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <h3>✅ Solution Applied</h3>
+                <ul>
+                    <li>Enhanced socket connection debugging</li>
+                    <li>Added connection event listeners</li>
+                    <li>Added join confirmation tracking</li>
+                    <li>Added delivery confirmation tracking</li>
+                    <li>Added error event handling</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔧 Debug Features Added</h2>
+        
+        <div class="code">
+            <h3>📡 Enhanced Socket Connection</h3>
+            <pre><code>// Enhanced debugging and event handling
+const s = io(getApiBase(), { transports: ['websocket', 'polling'] });
+
+// Connection debugging
+s.on('connect', () => {
+  console.log('🔌 Socket connected:', s.id);
+  console.log('👤 User joining with ID:', currentUser.userId);
+});
+
+// Join room
+s.emit('join', { userId: currentUser.userId });
+console.log('📡 Sent join event for user:', currentUser.userId);
+
+// Listen for incoming messages
+s.on('receive_message', (data) => {
+  console.log('📨 Received message event:', data);
+  loadHistory();
+});
+
+// Join confirmation
+s.on('joined', (data) => {
+  console.log('✅ Join confirmed:', data);
+});
+
+// Delivery confirmation
+s.on('message_delivered', (data) => {
+  console.log('📬 Message delivered:', data);
+});
+
+// Error handling
+s.on('error', (error) => {
+  console.error('❌ Socket error:', error);
+});</code></pre>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Test Instructions</h2>
+        
+        <div class="info">
+            <h3>🌐 How to Test Real-Time Messaging</h3>
+            <ol>
+                <li><strong>Step 1:</strong> Open <a href="http://localhost:3001" target="_blank">KMune App</a></li>
+                <li><strong>Step 2:</strong> Open browser's Developer Console (F12)</li>
+                <li><strong>Step 3:</strong> Login as User A in one tab</li>
+                <li><strong>Step 4:</strong> Login as User B in another tab</li>
+                <li><strong>Step 5:</strong> User A sends message to User B</li>
+                <li><strong>Step 6:</strong> Check User B's console for socket events</li>
+                <li><strong>Step 7:</strong> User B should see "📨 Received message event" immediately</li>
+            </ol>
+        </div>
+
+        <div class="info">
+            <h3>🔍 Expected Console Output</h3>
+            <div class="log">
+                <strong>Sender (User A):</strong><br>
+                🔌 Socket connected: abc123<br>
+                👤 User joining with ID: userA_id<br>
+                📡 Sent join event for user: userA_id<br>
+                ✅ Join confirmed: {userId: "userA_id", socketId: "abc123"}<br>
+                📬 Message delivered: {receiverId: "userB_id", status: "delivered"}<br><br>
+                
+                <strong>Receiver (User B):</strong><br>
+                🔌 Socket connected: def456<br>
+                👤 User joining with ID: userB_id<br>
+                📡 Sent join event for user: userB_id<br>
+                ✅ Join confirmed: {userId: "userB_id", socketId: "def456"}<br>
+                📨 Received message event: {senderId: "userA_id", encryptedMessage: "...", encryptedSessionKey: "...", timestamp: "..."}<br><br>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🎯 Troubleshooting</h2>
+        
+        <div class="step">
+            <h3>❌ If Messages Still Don't Appear:</h3>
+            <ul>
+                <li><strong>Check Backend:</strong> Ensure socket.io server is running</li>
+                <li><strong>Check Network:</strong> No firewall blocking websocket connections</li>
+                <li><strong>Check Console:</strong> Look for socket connection errors</li>
+                <li><strong>Check User IDs:</strong> Ensure both users have valid IDs</li>
+                <li><strong>Check CORS:</strong> Verify socket.io CORS settings</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `container ${type}`;
+            div.innerHTML = `<h3>${new Date().toLocaleTimeString()}</h3><p>${message}</p>`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showResult('📡 Socket Messaging Test loaded with enhanced debugging', 'success');
+        });
+    </script>
+</body>
+</html>

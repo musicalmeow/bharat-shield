@@ -1,0 +1,28 @@
+{
+  "name": "@kmune/encryption",
+  "version": "1.0.0",
+  "description": "Secure end-to-end encryption module for KMune messaging",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "libsodium-wrappers": "^0.7.13"
+  },
+  "keywords": [
+    "encryption",
+    "e2e",
+    "messaging",
+    "libsodium",
+    "security"
+  ],
+  "author": "KMune Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kmune/encryption"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

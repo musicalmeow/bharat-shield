@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Chat Test - KMune</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .chat-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .message {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 3px solid #007bff;
+        }
+        .message.own {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Delete Chat Functionality Test</h1>
+        <p>This test demonstrates the new delete chat feature in KMune.</p>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Test Controls</h2>
+        <button onclick="simulateChat()">💬 Simulate Chat with Messages</button>
+        <button onclick="testDelete()" class="danger">🗑️ Test Delete Chat</button>
+        <button onclick="clearStorage()">🧹 Clear All Storage</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>📱 Current Chat State</h2>
+        <div id="chatState" class="chat-preview">
+            <p>No chat simulated yet. Click "Simulate Chat" to create test messages.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Features Added</h2>
+        <div class="success">
+            <h3>✅ Delete Chat Button</h3>
+            <ul>
+                <li><strong>Location:</strong> Chat screen header next to contact name</li>
+                <li><strong>Style:</strong> Red button with trash icon</li>
+                <li><strong>Confirmation:</strong> Asks user before deleting</li>
+                <li><strong>Action:</strong> Clears messages from state and localStorage</li>
+            </ul>
+        </div>
+        
+        <div class="info">
+            <h3>🔧 Technical Implementation</h3>
+            <ul>
+                <li><strong>State Management:</strong> Clears React messages state</li>
+                <li><strong>Local Storage:</strong> Removes chat from localStorage</li>
+                <li><strong>Key Format:</strong> Uses chat_${userId}_${contactId} format</li>
+                <li><strong>Server Sync:</strong> Ready for server-side deletion API</li>
+                <li><strong>Error Handling:</strong> Try-catch with user feedback</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="warning">
+            <h3>⚠️ Privacy & Security Notes</h3>
+            <ul>
+                <li><strong>Local Only:</strong> Currently clears only local storage</li>
+                <li><strong>Server Data:</strong> Messages remain in database</li>
+                <li><strong>Future Enhancement:</strong> Add server-side deletion API</li>
+                <li><strong>User Control:</strong> Users can clear their local view</li>
+            </ul>
+        </div>
+
+    <div class="container">
+        <h2>🌐 How to Test in Real App</h2>
+            <ol>
+                <li>Open <a href="http://localhost:3001" target="_blank">KMune App</a></li>
+                <li>Login and go to any chat with messages</li>
+                <li>Click the red "🗑️ Delete Chat" button</li>
+                <li>Confirm deletion in the dialog</li>
+                <li>Verify messages are cleared from view</li>
+                <li>Refresh page - messages should remain deleted</li>
+            </ol>
+        </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function updateChatState(messages) {
+            const stateDiv = document.getElementById('chatState');
+            if (messages.length === 0) {
+                stateDiv.innerHTML = '<p>No messages in chat.</p>';
+                return;
+            }
+            
+            stateDiv.innerHTML = messages.map(msg => 
+                `<div class="message ${msg.own ? 'own' : ''}">
+                    <strong>${msg.own ? 'You' : 'Other'}:</strong> ${msg.text}
+                    <br><small>${msg.time}</small>
+                </div>`
+            ).join('');
+        }
+
+        function simulateChat() {
+            const testMessages = [
+                { id: '1', text: 'Hello! This is a test message.', own: false, time: '10:30 AM' },
+                { id: '2', text: 'Hi there! How are you?', own: true, time: '10:31 AM' },
+                { id: '3', text: 'I\'m doing great, thanks for asking!', own: false, time: '10:32 AM' },
+                { id: '4', text: 'Great to hear! Have a nice day.', own: true, time: '10:33 AM' }
+            ];
+            
+            // Simulate storing in localStorage
+            const storageKey = 'chat_user123_contact456';
+            localStorage.setItem(storageKey, JSON.stringify(testMessages));
+            
+            updateChatState(testMessages);
+            showResult('💬 Chat simulated with 4 messages', 'success');
+        }
+
+        function testDelete() {
+            const storageKey = 'chat_user123_contact456';
+            
+            // Check if chat exists
+            const existingChat = localStorage.getItem(storageKey);
+            if (!existingChat) {
+                showResult('❌ No chat to delete. Please simulate chat first.', 'warning');
+                return;
+            }
+            
+            const messages = JSON.parse(existingChat);
+            const messageCount = messages.length;
+            
+            // Simulate the delete confirmation
+            const confirmed = confirm('Are you sure you want to delete all messages in this chat? This action cannot be undone.');
+            
+            if (!confirmed) {
+                showResult('🚫 Delete cancelled by user', 'info');
+                return;
+            }
+            
+            // Perform deletion
+            try {
+                localStorage.removeItem(storageKey);
+                updateChatState([]);
+                showResult(`✅ Chat deleted successfully! Removed ${messageCount} messages.`, 'success');
+            } catch (error) {
+                showResult(`❌ Error deleting chat: ${error.message}`, 'error');
+            }
+        }
+
+        function clearStorage() {
+            const keys = Object.keys(localStorage).filter(key => key.startsWith('chat_'));
+            const count = keys.length;
+            
+            if (count === 0) {
+                showResult('🧹 No chat storage to clear', 'info');
+                return;
+            }
+            
+            if (confirm(`Clear all ${count} chat histories from storage?`)) {
+                keys.forEach(key => localStorage.removeItem(key));
+                updateChatState([]);
+                showResult(`🧹 Cleared ${count} chat histories from storage`, 'success');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showResult('🗑️ Delete Chat Test loaded', 'info');
+            
+            // Check for existing chat
+            const storageKey = 'chat_user123_contact456';
+            const existingChat = localStorage.getItem(storageKey);
+            if (existingChat) {
+                const messages = JSON.parse(existingChat);
+                updateChatState(messages);
+            }
+        });
+    </script>
+</body>
+</html>

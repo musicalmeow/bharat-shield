@@ -1,0 +1,7 @@
+{
+  "name": "@kmune/encryption",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "description": "Browser Web Crypto helpers for KMune (RSA-OAEP + AES-GCM)"
+}

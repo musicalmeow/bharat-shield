@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMune Test - Login & Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        input, button, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+        .message.own {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        .message.other {
+            background: #e9ecef;
+            color: black;
+        }
+        .error {
+            color: red;
+            background: #ffe6e6;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            background: #e6ffe6;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        .debug {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 KMune Test Interface</h1>
+    
+    <!-- Login Section -->
+    <div id="loginSection" class="container">
+        <h2>Login</h2>
+        <div>
+            <label>Select Test User:</label>
+            <select id="testUserSelect">
+                <option value="">Choose a user...</option>
+                <option value="testuser">testuser (ID: 69da82df614c47aa298ee8ab)</option>
+                <option value="testuser2">testuser2 (ID: 69da8339614c47aa298ee8cc)</option>
+            </select>
+        </div>
+        <button onclick="login()">Login</button>
+        <div id="loginStatus"></div>
+    </div>
+
+    <!-- Chat Section -->
+    <div id="chatSection" class="container hidden">
+        <h2>Chat</h2>
+        <div>
+            <label>Current User:</label>
+            <div id="currentUser"></div>
+        </div>
+        <div>
+            <label>Chat With:</label>
+            <select id="recipientSelect">
+                <option value="">Choose recipient...</option>
+            </select>
+        </div>
+        <button onclick="loadChatHistory()">Load Chat History</button>
+        <button onclick="startChat()">Start Chat</button>
+        
+        <div id="chatMessages"></div>
+        
+        <div id="messageInput" class="hidden">
+            <textarea id="messageText" placeholder="Type your message..." rows="3"></textarea>
+            <button onclick="sendMessage()">Send Message</button>
+        </div>
+    </div>
+
+    <!-- Debug Section -->
+    <div class="container">
+        <h3>Debug Info</h3>
+        <div id="debugInfo" class="debug"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        let currentUser = null;
+        let encryptionKeys = {};
+
+        // Test user keys (from our scripts)
+        const testUserKeys = {
+            testuser: {
+                userId: '69da82df614c47aa298ee8ab',
+                privateKey: 'MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCm6WUWg4aSJInXLT+vkOx8qDSlPH3giAdnkfzM0I+xMqIVwdySUXSddQCd97D1BSHsfhfxKk0zE0QLzArvyP8kaQ6jp95tehs08Uc6UqIJSsf5TCB+9X9NHnhoBwLruUvAAjucN93lqDKzhi0sVsecYyLVVy84+ijHI4zAE1ftCZcOpiyScFETvzkR6TviICqI9dgqfzrQt/3p0ldyP6zGtP9SPNScGJHd9h+wJmUvht4qjlsJ+wx49uoDyi/wVXrrMVKg8vWE8//YB78DbmfeEjo+eckBSCafUyVhexs1/pM71lZ6O6XiDHBhGcX4OI8OZ34XNS+tHSiGu+3yVEbbAgMBAAECggEAUDtHjsNpV+19XrQO9Wcd7ivypmzF+zyYBpZ7pL4qHBzBIeE+lAzYl+mKguRxqM2vSV0xSAkz87Wyk1Mg/LMqxcdENLG4LvqvgkrqmKPo5LuQFYsc4bpDV4Aqk6KvKj03JtRL8CNApCiuOnJoW3RZXhifQVq3xdUl7dduTFPgA328uSam5TMaiQsT5b2CA3LMVZE42n2yqYthr5NDJ/JFJEYPxDMOpscTn2jz3OrGQILlD2zzE1XX/a/O5lG8z4fOo9wE7kDQpJlgvvuQa44cOROKqhwXwb9i1yM8rtXWhp0PRcO/nbI9ynnzPiBtTEO6JSEVgypJ4D2FFOItXzU4FQKBgQDrYzJMhNkOLoDAI/kmZ3ye5Pix/6h01ujSCd0CASr7cxAPc40r5OzGQv+8fg7PQ3QQsa8H/q1JN21H8uZ2EOhINLUV+sqz6aY3st82Jztqu/3k0DqN+eb2afHXrsKAZtdTxnnZTU4LjNz1tbnRtr/BPNXTG/TcX/FPT88ABwnVhwKBgQC1hyQfeOUmfiPjNhSGP6WwQ1VvLTxeGlzu+fV/m4uthfPqo3FJWrEE8/g501aAn/DONYRh7NvtIoVh3ep9fOGs87IWejhfJH0Lvb1yTfWlFjeF2rHpGrxEggbvnnEQzMq6/g7uob/eMKKiwIGIY6SX7x1RYN9tNT5+7oSJTcPZDQKBgDbJke2JhlPssv8F4Hn14GXDebdEgFshonMw5IYQ64Y3U+ekx5kN4aaL9aZT2PKZCqzQDqNXvdGq2v7CJK4aZVZZHkUNaJzTp2KTeazLGONQ+lmFtftRzVZRdn7zKEZmqXvQWJAhlCbQFKYENEoBtUQu+r32ZdndYvdI5i9lc/6FAoGAHd6+8u7RxiO7hAfCGNUgToDF7iVjaZis8iXvX7AYq9T+7f03BvsFZes/TUSZV1D6LvRfdD2lcr/bct8xVrTV7b+r7kbuP7mhWe0+3zA025VsTXpPDCx6DkvXGFbaBAmu0lY73sh+6fDW0jEbH3ZF/zo5eMqX+UBpqDlXVcCWGYECgYEAxiYx2mBcbsMN87+2UeXd7ldxkGNVLWz7nFr8FzQgfRRq9MVCBG0isMPvyB7EtbJxuFgFlaIJl/DqA7095BCYIzAtUopSJu0Y+gMH8Ui49lRZ7ilCKgAI++5sD3YLVMGB+iWCtdLIaMtGT+nvY4kadwxGoDVrsUkuyBCxJij41Rc=',
+                publicKey: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApullFoOGkiSJ1y0/r5DsfKg0pTx94IgHZ5H8zNCPsTKiFcHcklF0nXUAnfew9QUh7H4X8SpNMxNEC8wK78j/JGkOo6febXobNPFHOlKiCUrH+UwgfvV/TR54aAcC67lLwAI7nDfd5agys4YtLFbHnGMi1VcvOPooxyOMwBNX7QmXDqYsknBRE785Eek74iAqiPXYKn860Lf96dJXcj+sxrT/UjzUnBiR3fYfsCZlL4beKo5bCfsMePbqA8ov8FV66zFSoPL1hPP/2Ae/A25n3hI6PnnJAUgmn1MlYXsbNf6TO9ZWejul4gxwYRnF+DiPDmd+FzUvrR0ohrvt8lRG2wIDAQAB'
+            },
+            testuser2: {
+                userId: '69da8339614c47aa298ee8cc',
+                privateKey: 'MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDGDRKnOENeZJsCoTZyDL8bEkX8+zKoGaTo4RmrLgu7NEZWMsNL7jkQvFji/MzDWx93Z5GQuXHnDSuJ8Y5ufrnMSIyXeXf6u1lWYMzkFi/fCscdFDj8gtBCBl9ymoeznwiYhUCGbZUhFmgj0u9OgI01CBCW91IXdWrFJt8lmfdWRk05rBnHRj0OXvhuh6c8CGGBftAj0ZNSszGu4iERSNmhzkw/onfMv+mlXpa4iGWpf+krknSgMHJfig5gOxSAFv7jf5658+1hNgFEHS6aLhLUBm+zFWcxaf8Ef/iNyQPPVXbsatnHnKcg5oTCYw9P2msGc88JaQHEpXtKnLuu1dM/AgMBAAECggEAAeOlCRL90twwfbAZALHYxC2CnRJZCNvPGWjwTD7mXhT2aM3CKYAZFkJIXMie5sGAmtcnlH2ttaUIBHWumfo709Q2AcnnAu107DXZ2SvRrWsrvBNxzw2BEWgrJ+uLyNhcW3bF8ferTlipifycoMnpeZcymqYQUpNMVJt1fHqBWVbSWGLd/pZejoIGnmeCYYQpELD+E+8jXN0htCxvbVU0oHhaAapKuYpRAAUO6JMUoBpcXnQ0ngREGyylhN70UuSag8WGXTIpnoG5wBmieAPocrOupzR5VSx133JwQvj8ul2YzNZQ3eVMvblvg5Wu8LgE/CroNgL52Xm1d0TgzdrCbQKBgQD/MvRnqJMhRMsKKkV8fdw6m0w/o2rQSjInNUWAtuJVCJb62COcUfw0Dte/fscTWB6b7AIbzRigrsp4yHnyDW+EJL38iNeGKEYp8XF6UkWU7wjWiGhbvWZPE4uz8Vu14z6fFRXNjaERFnz7XhkyBbZGhLWDZL20URIsjDGS9TPUzQKBgQDGrDOMH8d0snngTeW1wSiR1kWhzGj18h7wsEpHCuepG5RZp8zGHkVdaOmxonPqBv6xt7gJ1p8bA3+f5CKmb0WDMNoCzztTxUBE3WYQA4FiI/+0gyRlWB4DGxKNmuRQ2VMJ5O80re/cDcCXpbnrDDAjnHkBN6sEpncCLZdJLzLoOwKBgAoB64etGqfxVKz/X140aVB7CpBsTiIA5tqWwjT79wAyqAkKNMtKg8Ne2aMOy6u8hubCaIrCjjau5A28ftu5HyhlcHXYv+ro5Wd7qmGLnGLsxMH083K1iK+NKqtRybDmSmxenU5EQY6z/Q62b/KAOtelGKEgcDgD/dx1WvRSXUf5AoGAMP9ZOy6/Pz2hJzuu8nNv8P+6bpv+KuIK1Wt09i5vUdqWbMIgk5/1lYMBV6jsE4SkHepkfjCrTrs/J4zZKtj4eNF8gwLe69sS7aj4uexTZYPhVYCeYkwoIrXzjm7r7jCa9S67++8F3+yYWg4qWxjHapD1muJC0EPJyAS8cfUtBe8CgYA73aG7X/OCeuAuRJK8amYyXfthruOaTMVH3O/Lojh4av8Ds7DGP5GmZOD1xsdqyB14YiZwWfTJHA82e66wAtWNc0vQlIEYQ11mGIbXCfgMOEbhQqKdJfksetJNhH9hIL+d7+64ssKcoAAnUmHgku646oRx4AjHAeil/PgWl6nkOA==',
+                publicKey: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxg0SpzhDXmSbAqE2cgy/GxJF/PsyqBmk6OEZqy4LuzRGVjLDS+45ELxY4vzMw1sfd2eRkLlx5w0rifGObn65zEiMl3l3+rtZVmDM5BYv3wrHHRQ4/ILQQgZfcpqHs58ImIVAhm2VIRZoI9LvToCNNQgQlvdSF3VqxSbfJZn3VkZNOawZx0Y9Dl74boenPAhhgX7QI9GTUrMxruIhEUjZoc5MP6J3zL/ppV6WuIhlqX/pK5J0oDByX4oOYDsUgBb+43+eufPtYTYBRB0umi4S1AZvsxVnMWn/BH/4jckDz1V27GrZx5ynIOaEwmMPT9prBnPPCWkBxKV7Spy7rtXTPwIDAQAB'
+            }
+        };
+
+        function debug(message) {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            console.log(message);
+        }
+
+        async function apiRequest(path, options = {}) {
+            const url = API_BASE + path;
+            const method = options.method || 'GET';
+            debug(`API Request: ${method} ${url}`);
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(options.headers || {}),
+                    },
+                });
+                
+                const text = await response.text();
+                let body = null;
+                try {
+                    body = text ? JSON.parse(text) : null;
+                } catch (e) {
+                    throw new Error('Invalid JSON from server');
+                }
+                
+                debug(`API Response: ${response.status} ${JSON.stringify(body)}`);
+                
+                if (!response.ok) {
+                    throw new Error(body?.message || `HTTP ${response.status}`);
+                }
+                return body;
+            } catch (error) {
+                debug(`API Error: ${error.message}`);
+                throw error;
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('testUserSelect').value;
+            const statusDiv = document.getElementById('loginStatus');
+            
+            if (!username) {
+                statusDiv.innerHTML = '<div class="error">Please select a user</div>';
+                return;
+            }
+
+            try {
+                debug(`Logging in as ${username}`);
+                const data = await apiRequest('/api/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username })
+                });
+
+                // Store encryption keys
+                encryptionKeys = testUserKeys[username];
+                currentUser = {
+                    userId: data.userId,
+                    username: data.username,
+                    publicKey: data.publicKey
+                };
+
+                statusDiv.innerHTML = '<div class="success">Login successful!</div>';
+                debug(`Logged in as ${username} (ID: ${data.userId})`);
+                
+                // Show chat section
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('chatSection').classList.remove('hidden');
+                document.getElementById('currentUser').textContent = `${username} (ID: ${data.userId})`;
+                
+                // Populate recipient select
+                const recipientSelect = document.getElementById('recipientSelect');
+                recipientSelect.innerHTML = '<option value="">Choose recipient...</option>';
+                Object.keys(testUserKeys).forEach(key => {
+                    if (key !== username) {
+                        const option = document.createElement('option');
+                        option.value = key;
+                        option.textContent = `${key} (ID: ${testUserKeys[key].userId})`;
+                        recipientSelect.appendChild(option);
+                    }
+                });
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Login failed: ${error.message}</div>`;
+            }
+        }
+
+        async function loadChatHistory() {
+            const recipient = document.getElementById('recipientSelect').value;
+            if (!recipient || !currentUser) {
+                alert('Please select a recipient');
+                return;
+            }
+
+            try {
+                debug(`Loading chat history between ${currentUser.username} and ${recipient}`);
+                const recipientId = testUserKeys[recipient].userId;
+                const data = await apiRequest(`/api/messages/chat?senderId=${currentUser.userId}&receiverId=${recipientId}`);
+                
+                const messagesDiv = document.getElementById('chatMessages');
+                messagesDiv.innerHTML = '<h3>Chat History</h3>';
+                
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        const messageDiv = document.createElement('div');
+                        const isOwn = msg.senderId === currentUser.userId;
+                        messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+                        
+                        let text = '[Encrypted]';
+                        if (!isOwn) {
+                            // Try to decrypt received message
+                            try {
+                                text = decryptMessage(msg.encryptedMessage, msg.encryptedSessionKey);
+                            } catch (e) {
+                                text = '[Unable to decrypt]';
+                            }
+                        } else {
+                            text = '[You sent]';
+                        }
+                        
+                        messageDiv.innerHTML = `
+                            <strong>${isOwn ? 'You' : recipient}:</strong> ${text}
+                            <br><small>${new Date(msg.timestamp).toLocaleString()}</small>
+                        `;
+                        messagesDiv.appendChild(messageDiv);
+                    });
+                } else {
+                    messagesDiv.innerHTML += '<p>No messages yet</p>';
+                }
+                
+            } catch (error) {
+                debug(`Error loading chat history: ${error.message}`);
+                alert('Error loading chat history: ' + error.message);
+            }
+        }
+
+        function startChat() {
+            const recipient = document.getElementById('recipientSelect').value;
+            if (!recipient) {
+                alert('Please select a recipient');
+                return;
+            }
+            document.getElementById('messageInput').classList.remove('hidden');
+        }
+
+        function encryptMessage(plaintext, recipientPublicKey) {
+            // This is a simplified version - in real app, would use Web Crypto API
+            // For demo, we'll just return the plaintext as "encrypted"
+            return JSON.stringify({
+                v: 1,
+                iv: 'demo-iv',
+                data: btoa(plaintext)
+            });
+        }
+
+        function decryptMessage(encryptedMessageJson, encryptedSessionKey) {
+            // This is a simplified version - in real app, would use Web Crypto API
+            // For demo, we'll just decode the base64
+            try {
+                const encrypted = JSON.parse(encryptedMessageJson);
+                return atob(encrypted.data);
+            } catch (e) {
+                return '[Decryption failed]';
+            }
+        }
+
+        async function sendMessage() {
+            const recipient = document.getElementById('recipientSelect').value;
+            const messageText = document.getElementById('messageText').value;
+            
+            if (!recipient || !messageText.trim() || !currentUser) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            try {
+                debug(`Sending message from ${currentUser.username} to ${recipient}`);
+                const recipientId = testUserKeys[recipient].userId;
+                const recipientPublicKey = testUserKeys[recipient].publicKey;
+                
+                // Encrypt message (simplified for demo)
+                const encryptedMessage = encryptMessage(messageText, recipientPublicKey);
+                const encryptedSessionKey = 'demo-session-key';
+                
+                const data = await apiRequest('/api/messages/send', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        senderId: currentUser.userId,
+                        receiverId: recipientId,
+                        encryptedMessage,
+                        encryptedSessionKey,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                debug('Message sent successfully');
+                document.getElementById('messageText').value = '';
+                
+                // Reload chat history
+                setTimeout(loadChatHistory, 500);
+                
+            } catch (error) {
+                debug(`Error sending message: ${error.message}`);
+                alert('Error sending message: ' + error.message);
+            }
+        }
+
+        // Initialize
+        debug('KMune Test Interface loaded');
+    </script>
+</body>
+</html>
